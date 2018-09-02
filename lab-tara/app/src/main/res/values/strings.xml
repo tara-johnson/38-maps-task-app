@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">MapsTaskApp</string>
     <string name="title_activity_maps">Map</string>
+    <string name="set_endpoint">Set Endpoint</string>
+    <string name="save_route">Save route</string>
+    <string name="set_start">Set start</string>
 </resources>
