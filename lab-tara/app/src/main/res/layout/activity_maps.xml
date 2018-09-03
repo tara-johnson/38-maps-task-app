@@ -10,10 +10,7 @@
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="@+id/controls"
         tools:context=".MapsActivity" />
-
     <LinearLayout
         android:id="@+id/controls"
         android:layout_width="match_parent"
@@ -29,6 +26,8 @@
 
             <EditText
                 android:id="@+id/startLocation"
+                android:text="@string/start_lat_long"
+                android:background="@android:color/white"
                 android:layout_width="0sp"
                 android:layout_height="wrap_content"
                 android:layout_weight="4" />
@@ -48,6 +47,8 @@
 
             <EditText
                 android:id="@+id/endLocation"
+                android:text="@string/end_lat_long"
+                android:background="@android:color/white"
                 android:layout_width="0sp"
                 android:layout_height="wrap_content"
                 android:layout_weight="4" />

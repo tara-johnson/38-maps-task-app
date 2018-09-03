@@ -1,7 +1,13 @@
 package com.example.mapstaskapp;
 
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -12,7 +18,11 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMapClickListener {
 
     private GoogleMap mMap;
 
@@ -20,6 +30,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
+        ButterKnife.bind(this);
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -50,5 +63,48 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+
+        mMap.setOnMapClickListener(this);
+    }
+
+    private LatLng start;
+    private LatLng end;
+    private boolean isChoosingStart = false;
+    private boolean isChoosingEnd = false;
+
+    @OnClick(R.id.setStart)
+    public void setStart() {
+        isChoosingStart = true;
+        isChoosingEnd = false;
+    }
+
+    @OnClick(R.id.setEnd)
+    public void setEnd() {
+        isChoosingEnd = true;
+        isChoosingStart = false;
+    }
+
+    @BindView(R.id.startLocation) EditText startText;
+    @BindView(R.id.endLocation) EditText endText;
+
+    @Override
+    public void onMapClick(LatLng latLng) {
+        Log.d("LATLNG", latLng.latitude + "," + latLng.longitude);
+
+        if (isChoosingStart) {
+            start = latLng;
+            mMap.addMarker(new MarkerOptions().position(start).title("Start"));
+
+            startText.setText(latLng.toString());
+            isChoosingStart = false;
+        }
+
+        if (isChoosingEnd) {
+            end = latLng;
+            mMap.addMarker(new MarkerOptions().position(end).title("End"));
+
+            endText.setText(latLng.toString());
+            isChoosingEnd = false;
+        }
     }
 }
