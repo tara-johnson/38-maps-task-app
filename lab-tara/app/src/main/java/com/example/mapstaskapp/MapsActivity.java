@@ -2,6 +2,7 @@ package com.example.mapstaskapp;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
@@ -12,26 +13,28 @@ import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
-import android.widget.EditText;
 
+import com.example.mapstaskapp.Models.Errand;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
-import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener, GoogleMap.OnMapClickListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener {
 
     private static final int REQUEST_PERMISSION_GRANT = 1;
     private GoogleMap mMap;
     private LocationManager mLocationManager;
+    private LatLng mCurrentLocation;
 
     private int LOCATION_REFRESH_TIME = 1;
     private int LOCATION_REFRESH_DISTANCE = 1;
@@ -48,11 +51,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        // Write a message to the database
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference myRef = database.getReference("message");
+        final Intent data = getIntent();
 
-        myRef.setValue("Hello, World!");
+        FirebaseDatabase.getInstance().getReference("errands").child(data.getStringExtra("id")).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Errand errand = Errand.fromSnapshot(dataSnapshot);
+                mMap.addMarker(new MarkerOptions().title("start").position(errand.start));
+                mMap.addMarker(new MarkerOptions().title("end").position(errand.end));
+
+                double centerLat = (errand.start.latitude + errand.end.latitude) / 2;
+                double centerLng = (errand.start.longitude + errand.end.longitude) / 2;
+                LatLng center = new LatLng(centerLat, centerLng);
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(center));
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             initializeLocationListener();
@@ -97,56 +115,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
-
-        mMap.setOnMapClickListener(this);
-    }
-
-    private LatLng start;
-    private LatLng end;
-    private boolean isChoosingStart = false;
-    private boolean isChoosingEnd = false;
-
-    @OnClick(R.id.setStart)
-    public void setStart() {
-        isChoosingStart = true;
-        isChoosingEnd = false;
-    }
-
-    @OnClick(R.id.setEnd)
-    public void setEnd() {
-        isChoosingEnd = true;
-        isChoosingStart = false;
-    }
-
-    @BindView(R.id.startLocation) EditText startText;
-    @BindView(R.id.endLocation) EditText endText;
-
-    @Override
-    public void onMapClick(LatLng latLng) {
-        Log.d("LATLNG", latLng.latitude + "," + latLng.longitude);
-
-        if (isChoosingStart) {
-            start = latLng;
-            mMap.addMarker(new MarkerOptions().position(start).title("Start"));
-
-            startText.setText(latLng.toString());
-            isChoosingStart = false;
-        }
-
-        if (isChoosingEnd) {
-            end = latLng;
-            mMap.addMarker(new MarkerOptions().position(end).title("End"));
-
-            endText.setText(latLng.toString());
-            isChoosingEnd = false;
-        }
     }
 
     @Override
     public void onLocationChanged(Location location) {
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-        mMap.moveCamera(CameraUpdateFactory.zoomTo(4));
+        mCurrentLocation = latLng;
+    }
+
+    @OnClick(R.id.goToMyLocation)
+    public void goToMyLocation() {
+        if (mCurrentLocation != null) {
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(mCurrentLocation));
+        }
     }
 
     @Override
