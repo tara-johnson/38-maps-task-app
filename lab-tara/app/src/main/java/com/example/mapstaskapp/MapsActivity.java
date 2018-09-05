@@ -19,7 +19,9 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -50,27 +52,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-
-        final Intent data = getIntent();
-
-        FirebaseDatabase.getInstance().getReference("errands").child(data.getStringExtra("id")).addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                Errand errand = Errand.fromSnapshot(dataSnapshot);
-                mMap.addMarker(new MarkerOptions().title("start").position(errand.start));
-                mMap.addMarker(new MarkerOptions().title("end").position(errand.end));
-
-                double centerLat = (errand.start.latitude + errand.end.latitude) / 2;
-                double centerLng = (errand.start.longitude + errand.end.longitude) / 2;
-                LatLng center = new LatLng(centerLat, centerLng);
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(center));
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             initializeLocationListener();
@@ -115,6 +96,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+
+        final Intent data = getIntent();
+        FirebaseDatabase.getInstance().getReference("errands").child(data.getStringExtra("id"))    .addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                Errand errand = Errand.fromSnapshot(dataSnapshot);
+
+                mMap.addMarker(new MarkerOptions().title("start").position(errand.start).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+
+                mMap.addMarker(new MarkerOptions().title("end").position(errand.end));
+
+                LatLngBounds bounds = LatLngBounds.builder().include(errand.start).include(errand.end).build();
+                int padding = 200;
+                mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding));
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
     }
 
     @Override
